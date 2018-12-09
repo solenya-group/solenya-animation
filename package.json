@@ -1,0 +1,16 @@
+{
+  "name": "solenya-animation",
+  "version": "1.2.6",
+  "author": "solenya",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solenya-group/solenya-animation"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "solenya": "^1.2.6",
+    "typestyle": "^2.0.1"
+  }
+}
