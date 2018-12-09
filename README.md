@@ -41,7 +41,6 @@ export type Orientation = "horizontal"|"vertical"
 interface TransitionChildrenProps {
     orientation: orientation
     duration?: number
-
 }
 ```
 
