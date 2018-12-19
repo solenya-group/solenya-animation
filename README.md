@@ -37,12 +37,18 @@ The properties are:
 
 ```typescript
 export type Orientation = "horizontal"|"vertical"
+export type Direction = "forwards"|"backwards"
 
 interface TransitionChildrenProps {
     orientation: orientation
-    duration?: number
+    duration?: number,
+    carouselingDirection?: Direction
 }
 ```
+
+Children will automatically move to their new positions if necessary.
+
+By default, entering children will expand, while exiting children will collapse. If `carouselingDirection` is set, then entering and exiting children will slide in the direction specified.
 
 # transitionChild
 

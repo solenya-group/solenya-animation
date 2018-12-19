@@ -89,13 +89,15 @@ export function transitionChild (props: TransitionChildProps) : VLifecycle
 
 export interface TransitionChildrenProps {    
     orientation?: Orientation
-    duration?: number
+    duration?: number,
+    carouselingDirection?: Direction
 }
 
 export function transitionChildren (props: TransitionChildrenProps = {}): VLifecycle
 {
     const duration = props.duration || defaultDuration
     const orientation = props.orientation || "vertical"
+    const slide = ! props.carouselingDirection ? 0 : props.carouselingDirection == "forwards" ? 1 : -1
 
     return {                       
         onBeforeUpdate (el) {               
@@ -110,12 +112,11 @@ export function transitionChildren (props: TransitionChildrenProps = {}): VLifec
                         
             const incomingElements = childElements (el).filter(e => previousEls.indexOf (e) == -1)
             incomingElements.forEach (c =>
-                (<CommonElement>c).animate (<Keyframe[]>[
-                { transformOrigin: "0px 0px", transform: getScale (0, orientation)},
-                { transformOrigin: "0px 0px", transform: 'none' }
-            ],
-                { duration: duration, easing: 'ease-out' }
-            ))
+                c.animate (
+                    slide == 0 ? expandAnimation (orientation) : slideInAnimation (orientation, -slide * size (c.getBoundingClientRect(), orientation)),            
+                    { duration: duration, easing: 'ease-out' }
+                )
+            )                           
 
             if (el instanceof HTMLElement) {            
                 const outgoingElements = previousEls.filter (c => c["removing"] == true)
@@ -129,10 +130,8 @@ export function transitionChildren (props: TransitionChildrenProps = {}): VLifec
                     var invertY = first.top - last.top      
                     c.style.top = "" + invertY + "px"
                     c.style.left = "" + invertX + "px"
-                    const anim = c.animate (<Keyframe[]>[
-                        { transformOrigin: "0px 0px", transform: getScale (1, orientation), opacity: "1" },
-                        { transformOrigin: "0px 0px", transform: getScale (0, orientation), opacity: "0" }
-                    ],
+                    const anim = c.animate (
+                        slide == 0 ? collapseAnimation (orientation) : slideOutAnimation (orientation, slide * size (c.getBoundingClientRect(), orientation)),                   
                         { duration: duration, easing: 'ease-out' }
                     ) 
                     removeOnFinish (anim, c)                
@@ -181,3 +180,23 @@ export const getScale = (n: number, orientation: Orientation) =>
 
 export const childElements = (el: Element) =>
     Array.from(el.childNodes).map(c => c as CommonElement)
+
+export const expandAnimation = (o: Orientation) => <Keyframe[]> [
+    { transformOrigin: "0px 0px", transform: getScale (0, o)},
+    { transformOrigin: "0px 0px", transform: 'none' }
+]
+
+export const collapseAnimation = (o: Orientation) => <Keyframe[]> [
+    { transformOrigin: "0px 0px", transform: getScale (1, o), opacity: "1" },
+    { transformOrigin: "0px 0px", transform: getScale (0, o), opacity: "0" }
+]
+
+export const slideInAnimation = (o: Orientation, amount: number) => <Keyframe[]> [
+     { opacity: "0", transform: getTranslate (amount, o)},
+     { opacity: "1", transform: 'none' }
+]
+
+export const slideOutAnimation = (o: Orientation, amount: number) => <Keyframe[]> [
+     { transform: "none", opacity: "1" },
+     { transform: getTranslate (amount, o), opacity: "0" }
+]
