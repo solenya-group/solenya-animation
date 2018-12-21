@@ -10,7 +10,7 @@ For context, this package provides 1 of 3 techniques you can use to animate in S
 
 # transitionChildren
 
-The `transitionChildren` function lets you gracefully transition the positions of a group of children as each enter, move, and leave the DOM.
+The `transitionChildren` function lets you gracefully transition the positions of a group of children as each enter and leave the DOM, or move relative to each other.
 
 It's used as follows:
 
@@ -31,47 +31,34 @@ export class AnimateShuffle extends Component {
   }
 }
 ```
-Each child **must have a key** so the virtual DOM knows whether to add, remove, or update elements.
+Each child **must have a unique key** relative to its siblings. When in doubt, the virtual DOM thinks: Same key? Same element. Different key? Different element. So the key instructs the DOM to honor your exact intent when adding, removing, and updating elements.
 
-The properties are:
+The properties of `transitionChildren` are:
 
 ```typescript
 export type Orientation = "horizontal"|"vertical"
 export type Direction = "forwards"|"backwards"
 
-interface TransitionChildrenProps {
-    orientation: orientation
+export interface TransitionChildrenProps {    
+    /** Whether the children are oriented horiontally or vertically */
+    orientation?: Orientation
+
+    /** The duration of the animation */
     duration?: number,
-    carouselingDirection?: Direction
+
+    /** The direction, either "forwards" or "backwards" - useful for carousel animations */
+    direction?: Direction
+
+    /** Whether to reset the scroll position to zero. Useful for full page animations. */
+    scrollToStart?: boolean,
+
+    /** The animation threshold in pixels. Defaults to 5. */
+    animationThreshold?: number
 }
 ```
 
 Children will automatically move to their new positions if necessary.
 
-By default, entering children will expand, while exiting children will collapse. If `carouselingDirection` is set, then entering and exiting children will slide in the direction specified.
+By default, entering children will expand, while exiting children will collapse. If `direction` is set, then entering and exiting children will slide in the direction specified.
 
-# transitionChild
-
-The `transitionChild` function lets you slide a single child element out while sliding a new child element in.
-
-```typescript
-div (transitionChild ({ orientation: "horizontal", direction: "forwards"}),
-    div ({ key: elementKey}, ...)
-)
-```
-The properties are:
-
-```typescript
-export type Orientation = "horizontal"|"vertical"
-export type Direction = "forwards"|"backwards"
-
-interface TransitionChildProps {
-    orientation: Orientation
-    direction: Direction
-    duration?: number
-    scrollToZero?: boolean
-}
-```
-`transitionChild` can only be passed to an `VElement` that has **exactly 1 keyed child**. The key is crucial to let the virtual DOM know whether to merely update the element vs. remove and replace it. It's only when the element is replaced that the animation occurs.
-
-Set `scrollToZero` to `true` when animating an element that represents a new page, as it's undesirable when the sliding stops to be scrolled part way into the new page.
+Set `scrollToStart` to `true` when animating an element that represents a new page, as it's undesirable when the sliding stops to be scrolled part way into the new page.

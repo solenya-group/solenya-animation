@@ -1,1 +1,1 @@
-export { transitionChildren, transitionChild, Direction, Orientation, TransitionChildProps, TransitionChildrenProps } from './animation'
+export { transitionChildren, Direction, Orientation, TransitionChildrenProps } from './animation'
