@@ -4,13 +4,13 @@ Solenya animation coordinates element animations in response to DOM changes.
 
 For context, this package provides 1 of 3 techniques you can use to animate in Solenya:
 
-1) CSS animation - this is great for animating an element when the previous position of the element or any of the element's siblings is irrelevant.
+1) CSS animation - this is great for animating an element when the previous bounds of the element or any of the element's siblings is irrelevant.
 2) Web Animations API - this is great for sequencing animations on an element. The Web animations API is supported by most browsers and you can use the `web-animations-js` shim for the remaining browsers such as Internet Explorer. You can also use third party animation packages.
-3) Measure/flip animations - this is what this package does - it lets you automatically animate the positions of elements in response to DOM changes. It does this using the measure/flip technique.
+3) Measure/flip animations - this is what this package does - it lets you automatically animate the position and size of elements in response to DOM changes. It does this based on the measure/flip technique.
 
 # transitionChildren
 
-The `transitionChildren` function lets you gracefully transition the positions of a group of children as each enter and leave the DOM, or move relative to each other.
+The `transitionChildren` function lets you gracefully transition the position and size of each child element as its updated, enters, or leaves the DOM. Use it to build lists where children move around or grow or shrink in response to DOM changes.
 
 It's used as follows:
 

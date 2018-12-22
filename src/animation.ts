@@ -25,6 +25,11 @@ export interface TransitionChildrenProps {
 
 type CommonRect = DOMRect | ClientRect
 
+type ChangeRect = {
+    before: CommonRect
+    after: CommonRect
+}
+
 interface IPoint {x: number, y: number }
 
 type ChangeRange =
@@ -36,7 +41,7 @@ type ChangeRange =
 interface PseudoElement extends HTMLElement {    
     state_transitionChildren?: PseudoElement[]
     state_transitionScroll?: number
-    state_transitionRect?: CommonRect
+    state_prevBounds?: CommonRect
     state_transitionPositionStyle?: string | null
     removing?: boolean
 }
@@ -53,7 +58,7 @@ export function transitionChildren (props: TransitionChildrenProps = {}): VLifec
             forceRenderStyles()            
             const children = el.state_transitionChildren = childElements (el)
             children.forEach (kid => {
-                measure (kid)
+                kid.state_prevBounds = kid.getBoundingClientRect()       
             })
             el.state_transitionScroll = orientation == "horizontal" ? document.documentElement.scrollLeft : document.documentElement.scrollTop           
         },
@@ -67,12 +72,12 @@ export function transitionChildren (props: TransitionChildrenProps = {}): VLifec
             const inKids = childElements (el).filter(kid => prevKids.indexOf (kid) == -1)
             const outKids = prevKids.filter (kid => kid.removing == true)
            
-            stableKids.forEach (kid => flip (kid, duration, animationThreshold))
+            stableKids.forEach (kid => animateBoundsChange (kid, duration, animationThreshold))
 
             if (! inKids.length && ! outKids.length)
                 return           
 
-            const outSize = sum (outKids, c => size (c.state_transitionRect!, orientation))
+            const outSize = sum (outKids, c => size (c.state_prevBounds!, orientation))
             const inSize = sum (inKids, c => size (c.getBoundingClientRect(), orientation))
             const scrollBy = ! props.direction ? 0 : el.state_transitionScroll! + (props.direction == "forwards" ? -outSize : inSize)
 
@@ -92,11 +97,12 @@ export function transitionChildren (props: TransitionChildrenProps = {}): VLifec
                 
                 el.style.position = "relative"
                 kid.style.position = ! props.direction || ! props.scrollToStart ? "absolute" : "fixed"                                 
-                kid.style.left = kid.style.top = "0px"
-                kid.style.width = kid.state_transitionRect!.width + "px"
-                kid.style.height = kid.state_transitionRect!.height + "px"
+                kid.style.left = "0px"
+                kid.style.top = "0px"
+                kid.style.width = kid.state_prevBounds!.width + "px"
+                kid.style.height = kid.state_prevBounds!.height + "px"
                 el.insertBefore (kid, null)                
-                var d = distanceToOrigin (kid)
+                var d = distanceToOrigin (getBoundsChange (kid))
                 kid.style.left = `${-d.x}px` // note: must use left/top not translate cause of IE stuttering
                 kid.style.top = `${-d.y}px`                                
                                 
@@ -121,30 +127,46 @@ export function transitionChildren (props: TransitionChildrenProps = {}): VLifec
     }
 }
 
-export function measure(el: PseudoElement) {        
-    el.state_transitionRect = el.getBoundingClientRect()       
-}
-
-const distanceToOrigin = (el: PseudoElement) => {
-    var prevRect = el.state_transitionRect!
-    var curRect = el.getBoundingClientRect()                    
+const distanceToOrigin = (r: ChangeRect) => {
     return {
-        x: curRect.left - prevRect.left,
-        y: curRect.top - prevRect.top   
+        x: r.after.left - r.before.left,
+        y: r.after.top - r.before.top   
     }
 }
 
-export function flip (el: PseudoElement, duration: number, flipThreshold: number) {  
-    const d = distanceToOrigin (el)
+const getBoundsChange = (el: PseudoElement) => ({
+    before: el.state_prevBounds!,
+    after: el.getBoundingClientRect()                    
+})
 
-    if (Math.abs (d.x) <= flipThreshold && Math.abs (d.y) <= flipThreshold)
+export function animateBoundsChange (el: PseudoElement, duration: number, flipThreshold: number)
+{      
+    const rect = getBoundsChange (el)
+    const distance = distanceToOrigin (rect)
+    const changes = [
+        ...[distance.x, distance.y],
+        ...[rect.after.width - rect.before.width, rect.after.height - rect.before.height]
+    ]
+
+    if (! any (changes, v => Math.abs (v) > flipThreshold))
         return
 
-    el.animate(<Keyframe[]> [
-        { transform: `translate(${-d.x}px,${-d.y}px)` },
+    const transformKeyframes = <Keyframe[]> [
+        { transform: `translate(${-distance.x}px,${-distance.y}px)` },
         { transform: `translate(0px,0px)` }
-    ],
-    { duration: duration, easing: 'ease-out' })
+    ]
+
+    const sizeKeyframes = <Keyframe[]> [
+        { width: `${rect.before.width}px`, height: `${rect.before.height}px` },
+        { width: `${rect.after.width}px`, height: `${rect.after.height}px` }
+    ]
+
+    const keyframes = [
+        {...transformKeyframes[0], ...sizeKeyframes[0]},
+        {...transformKeyframes[1], ...sizeKeyframes[1]}
+    ]
+    
+    el.animate (keyframes, { duration: duration, easing: 'ease-out' })
 }
 
 export const size = (r: CommonRect, o: Orientation) =>
@@ -180,4 +202,11 @@ const sum = function <T>(source: T[], mapper: (val: T) => number) {
     for (var x of source)
         total += mapper(x)
     return total
+}
+
+const any = function <T>(source: T[], filter: (val: T) => boolean) {
+    for (var x of source)
+        if (filter (x))
+            return true
+    return false
 }
