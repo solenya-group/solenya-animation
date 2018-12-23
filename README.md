@@ -59,6 +59,9 @@ export interface TransitionChildrenProps {
 
     /** The animation threshold in pixels. Defaults to 5. */
     animationThreshold: number
+
+    /** Whether width and height changes should be animated. Defaults to false. */
+    isSizeAnimated: number
 }
 ```
 
