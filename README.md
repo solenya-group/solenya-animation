@@ -38,27 +38,42 @@ The properties of `transitionChildren` are:
 ```typescript
 export type Orientation = "horizontal"|"vertical"
 export type Direction = "forwards"|"backwards"
+export type AnimationKind = "fade"|"slide"|"scale"
 
 export interface TransitionChildrenProps {    
-    /** Whether the children are oriented horiontally or vertically */
-    orientation?: Orientation
+
+    /** The kind of animation - "fade" | "slide" | "scale". Defaults to "slide" if direction is specified, else "scale". */
+    kind: AnimationKind
+
+    /** Whether the children are oriented horiontally or vertically. Defaults to "vertical" */
+    orientation: Orientation
 
     /** The duration of the animation */
-    duration?: number,
+    duration: number,
 
-    /** The direction, either "forwards" or "backwards" - useful for carousel animations */
-    direction?: Direction
+    /** Either "forwards" or "backwards" */
+    direction: Direction
 
     /** Whether to reset the scroll position to zero. Useful for full page animations. */
-    scrollToStart?: boolean,
+    scrollToStart: boolean,
 
     /** The animation threshold in pixels. Defaults to 5. */
-    animationThreshold?: number
+    animationThreshold: number
 }
 ```
 
 Children will automatically move to their new positions if necessary.
 
-By default, entering children will expand, while exiting children will collapse. If `direction` is set, then entering and exiting children will slide in the direction specified.
+There's three types of animation `kind`, that determines what happens to *entering* and *leaving* elements:
+
+* `slide` - slide in and out
+* `scale` - expand and collapse
+* `fade` - fade in and out
+
+If `kind` is not specified, then it defaults to `slide` if `direction` is specified, else `scale`.
+
+`slide` is useful for carousel style animations on static lists. `scale` is useful for animating dynamic lists where elements may be randomly inserted or removed.
+
+Note you can use `transitionChildren` in the case where there's only 1 child at a time - this is quite a common scenario.
 
 Set `scrollToStart` to `true` when animating an element that represents a new page, as it's undesirable when the sliding stops to be scrolled part way into the new page.
