@@ -94,7 +94,8 @@ export function transitionChildren (props: Partial<TransitionChildrenProps> = {}
 
             const outSize = sum (outKids, c => size (c.state_prevBounds!, p.orientation))
             const inSize = sum (inKids, c => size (c.getBoundingClientRect(), p.orientation))
-            const scrollBy = p.kind != "slide" ? 0 : el.state_transitionScroll! + (p.direction == "forwards" ? -outSize : inSize)
+            const scrollPos = p.scrollToStart ? el.state_transitionScroll! : 0
+            const scrollBy = p.kind != "slide" ? 0 : scrollPos + (p.direction == "forwards" ? -outSize : inSize)
 
             inKids.forEach (kid => {
                 animateKind ({
@@ -117,6 +118,7 @@ export function transitionChildren (props: Partial<TransitionChildrenProps> = {}
                 kid.style.top = "0px"
                 kid.style.width = kid.state_prevBounds!.width + "px"
                 kid.style.height = kid.state_prevBounds!.height + "px"
+                kid.style.opacity = "0"
                 el.insertBefore (kid, null)                
                 var d = distanceToOrigin (getBoundsChange (kid))
                 kid.style.left = `${-d.x}px` // note: must use left/top not translate cause of IE stuttering
