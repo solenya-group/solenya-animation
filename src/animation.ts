@@ -28,7 +28,7 @@ export interface TransitionChildrenProps {
     animationThreshold: number,
 
     /** Whether width and height changes should be animated. Defaults to false. */
-    isSizeAnimated: number
+    isSizeAnimated: boolean
 }
 
 type CommonRect = DOMRect | ClientRect
