@@ -1,6 +1,6 @@
 {
   "name": "solenya-animation",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": "solenya",
   "license": "MIT",
   "repository": {
@@ -10,7 +10,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
-    "solenya": "^1.2.6",
+    "solenya": "^1.2.7",
     "typestyle": "^2.0.1"
   }
 }

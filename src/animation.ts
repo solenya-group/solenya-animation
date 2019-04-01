@@ -33,18 +33,12 @@ export interface TransitionChildrenProps {
 
 type CommonRect = DOMRect | ClientRect
 
-type RectChange = {
-    before: CommonRect
-    after: CommonRect
+type Change<T> = {
+    before: T
+    after: T
 }
 
 interface IPoint {x: number, y: number }
-
-type NumberChange =
-{
-    begin: number,
-    end: number
-}
 
 interface PseudoElement extends HTMLElement {    
     state_transitionChildren?: PseudoElement[]
@@ -52,6 +46,7 @@ interface PseudoElement extends HTMLElement {
     state_prevBounds?: CommonRect
     state_transitionPositionStyle?: string | null
     removing?: boolean
+    removingAnimationStarted?: boolean
 }
 
 export function transitionChildren (props: Partial<TransitionChildrenProps> = {}): VLifecycle
@@ -101,24 +96,29 @@ export function transitionChildren (props: Partial<TransitionChildrenProps> = {}
                 animateKind ({
                     element: kid,
                     transition: p,
-                    fade: { begin: 0, end: 1 },
-                    slide: { begin: -scrollBy, end: 0 },
-                    scale: { begin: 0, end: 1 }
+                    fade: { before: 0, after: 1 },
+                    slide: { before: -scrollBy, after: 0 },
+                    scale: { before: 0, after: 1 }
                 })       
             })
             
             outKids.forEach (kid =>
             {       
+                if (kid.removingAnimationStarted)
+                    return
+
+                kid.removingAnimationStarted = true
+
                 if (! el.state_transitionPositionStyle)
                     el.state_transitionPositionStyle = el.style.position
                 
                 el.style.position = "relative"
-                kid.style.position = p.kind != "slide" || ! p.scrollToStart ? "absolute" : "fixed"                                 
+                kid.style.position = p.kind != "slide" || ! p.scrollToStart ? "absolute" : "fixed" // ie only works with fixed                             
                 kid.style.left = "0px"
                 kid.style.top = "0px"
                 kid.style.width = kid.state_prevBounds!.width + "px"
                 kid.style.height = kid.state_prevBounds!.height + "px"
-                kid.style.opacity = "0"
+                kid.style.opacity = "0" // prevents momentary flicker on ios
                 el.insertBefore (kid, null)                
                 var d = distanceToOrigin (getBoundsChange (kid))
                 kid.style.left = `${-d.x}px` // note: must use left/top not translate cause of IE stuttering
@@ -127,9 +127,9 @@ export function transitionChildren (props: Partial<TransitionChildrenProps> = {}
                 const anim = animateKind ({
                     element: kid,
                     transition: p,
-                    fade: { begin: 1, end: 0 },
-                    slide: { begin: 0, end: scrollBy },
-                    scale: { begin: 1, end: 0 }
+                    fade: { before: 1, after: 0 },
+                    slide: { before: 0, after: scrollBy },
+                    scale: { before: 1, after: 0 }
                 })
 
                 anim.onfinish = () => {
@@ -149,9 +149,9 @@ export function transitionChildren (props: Partial<TransitionChildrenProps> = {}
 type AnimateKindProps = {
     element: PseudoElement
     transition: TransitionChildrenProps,
-    fade: NumberChange,
-    scale: NumberChange,
-    slide: NumberChange
+    fade: Change<number>
+    scale: Change<number>
+    slide: Change<number>
 }
 
 const animateKind = (props: AnimateKindProps) => {
@@ -163,17 +163,17 @@ const animateKind = (props: AnimateKindProps) => {
     )
 }
 
-const distanceToOrigin = (r: RectChange) => {
+const distanceToOrigin = (r: Change<CommonRect>) => {
     return {
         x: r.after.left - r.before.left,
         y: r.after.top - r.before.top   
     }
 }
 
-const getBoundsChange = (el: PseudoElement) => ({
+const getBoundsChange = (el: PseudoElement) => <Change<CommonRect>>{
     before: el.state_prevBounds!,
     after: el.getBoundingClientRect()                    
-})
+}
 
 export function animateBoundsChange (el: PseudoElement, props: TransitionChildrenProps)
 {      
@@ -228,20 +228,20 @@ export const getOrigin = (n: number, o: Orientation, direction: Direction) => {
 export const childElements = (el: Element) =>
     Array.from(el.childNodes).map(c => c as PseudoElement)
 
-export const scaleAnimation = (o: Orientation, scale: NumberChange, direction: Direction, opacity: NumberChange) => <Keyframe[]> [
-    { opacity: ""+opacity.begin, transformOrigin: getOrigin (scale.begin, o, direction), transform: getScale (scale.begin, o)},
-    { opacity: ""+opacity.end, transformOrigin: getOrigin (scale.begin, o, direction), transform: getScale (scale.end, o) }
+export const scaleAnimation = (o: Orientation, scale: Change<number>, direction: Direction, opacity: Change<number>) => <Keyframe[]> [
+    { opacity: ""+opacity.before, transformOrigin: getOrigin (scale.before, o, direction), transform: getScale (scale.before, o)},
+    { opacity: ""+opacity.after, transformOrigin: getOrigin (scale.before, o, direction), transform: getScale (scale.after, o) }
 ]
 
-export const slideAnimation = (o: Orientation, translate: NumberChange, opacity: NumberChange) => <Keyframe[]> [
-     { opacity: ""+opacity.begin, transform: getTranslate (translate.begin, o) },
-     { opacity: ""+opacity.end, transform: getTranslate (translate.end, o) }
+export const slideAnimation = (o: Orientation, translate: Change<number>, opacity: Change<number>) => <Keyframe[]> [
+     { opacity: ""+opacity.before, transform: getTranslate (translate.before, o) },
+     { opacity: ""+opacity.after, transform: getTranslate (translate.after, o) }
 ]
 
-export const fadeAnimation = (opacity: NumberChange) => <Keyframe[]> [
-     { opacity: ""+opacity.begin },
+export const fadeAnimation = (opacity: Change<number>) => <Keyframe[]> [
+     { opacity: ""+opacity.before },
      { opacity: ""+0 },
-     { opacity: ""+opacity.end }
+     { opacity: ""+opacity.after }
 ]
 
 const sum = function <T>(source: T[], mapper: (val: T) => number) {
